@@ -451,19 +451,104 @@ static void drawStatusDots(int y, uint16_t active) {
   }
 }
 
-static void drawScanScreen() {
+static String shortText(String value, uint8_t maxLen) {
+  value.trim();
+  if (value.length() <= maxLen) {
+    return value;
+  }
+  return value.substring(0, maxLen - 3) + "...";
+}
+
+static void drawAsciiCentered(const String &text, int16_t y, uint16_t color) {
+  resetFont();
+  tft.setTextSize(1);
+  tft.setTextColor(color);
+  const int16_t x = (SCREEN_W - int16_t(text.length()) * 6) / 2;
+  tft.setCursor(x < 20 ? 20 : x, y);
+  tft.print(text);
+}
+
+static void drawStateChip(const char *state, uint16_t accent) {
+  resetFont();
+  tft.fillRoundRect(36, 24, 150, 18, 6, rgb(10, 25, 35));
+  tft.drawRoundRect(36, 24, 150, 18, 6, accent);
+  tft.setTextColor(accent);
+  tft.setTextSize(1);
+  tft.setCursor(44, 30);
+  tft.print(state);
+}
+
+static void drawStateShell(const char *title, uint16_t accent, bool activeDots) {
   fillBackground();
-  drawBluetoothIcon(false);
-  drawStatusDots(62, C_GREEN());
-  drawCenteredUtf8("SCAN BMS", 54, C_TEXT(), u8g2_font_wqy16_t_gb2312);
-  drawUtf8("Searching nearby ANT-BMS", 78, 96, C_MUTED(), u8g2_font_wqy14_t_gb2312);
-  drawUtf8("Phone config is available", 78, 118, C_MUTED(), u8g2_font_wqy14_t_gb2312);
+  tft.fillRoundRect(23, 26, 6, 108, 3, accent);
+  drawBluetoothIcon(phoneConnected);
+  drawStateChip(appStateName(appState), accent);
+  if (activeDots) {
+    drawStatusDots(60, accent);
+  }
+  drawCenteredUtf8(title, 82, C_TEXT(), u8g2_font_wqy16_t_gb2312);
+}
+
+static void drawStateHint(const char *line1, const char *line2) {
+  drawCenteredUtf8(line1, 108, C_MUTED(), u8g2_font_wqy14_t_gb2312);
+  drawCenteredUtf8(line2, 130, C_MUTED(), u8g2_font_wqy14_t_gb2312);
+}
+
+static void drawBootScreen() {
+  drawStateShell("启动中", C_BLUE(), true);
+  drawStateHint("初始化屏幕和蓝牙", "读取已保存 BMS");
+}
+
+static void drawBleReadyScreen() {
+  drawStateShell("配置蓝牙已开启", C_BLUE(), false);
+  drawStateHint("微信可连接仪表", PHONE_ADV_NAME);
+}
+
+static void drawWaitConfigScreen(const char *reason) {
+  drawStateShell("等待手机配置", C_YELLOW(), false);
+  drawStateHint("打开微信小程序", "选择或重连 BMS");
+  drawAsciiCentered(String(reason), 145, C_DIM());
+}
+
+static void drawTryLastBmsScreen() {
+  drawStateShell("连接上次 BMS", C_BLUE(), true);
+  const String name = selectedBmsName.length() ? selectedBmsName : "Saved BMS";
+  drawAsciiCentered(shortText(name, 24), 108, C_MUTED());
+  drawAsciiCentered(selectedBmsMac, 124, C_TEXT());
+  drawAsciiCentered("No strongest fallback", 145, C_DIM());
+}
+
+static void drawManualBmsScanScreen() {
+  drawStateShell("扫描 BMS 中", C_GREEN(), true);
+  drawStateHint("小程序发起扫描", "发现后返回手机");
+  drawAsciiCentered("Scan window: 5s", 145, C_DIM());
+}
+
+static void drawSwitchingBmsScreen(const String &mac) {
+  drawStateShell("切换 BMS 中", C_YELLOW(), true);
+  drawStateHint("正在连接新目标", "成功后才保存");
+  drawAsciiCentered(mac, 145, C_TEXT());
+}
+
+static void drawConnectFailedScreen(const char *reason) {
+  drawStateShell("BMS 连接失败", C_RED(), false);
+  drawStateHint("原保存配置不变", "等待手机重新选择");
+  drawAsciiCentered(String(reason), 145, C_DIM());
+}
+
+static void drawScanScreen() {
+  if (appState == TRY_CONNECT_LAST_BMS) {
+    drawTryLastBmsScreen();
+  } else if (appState == SWITCHING_BMS) {
+    drawSwitchingBmsScreen(preferredScanMac);
+  } else {
+    drawManualBmsScanScreen();
+  }
   screenReady = true;
 }
 
 static void drawConnectingScreen(const String &deviceName, int rssi) {
-  fillBackground();
-  drawBluetoothIcon(false);
+  drawStateShell("正在连接 BMS", C_BLUE(), true);
   tft.drawCircle(160, 60, 32, C_DIM());
   tft.drawLine(160, 38, 160, 82, C_TEXT());
   tft.drawLine(160, 38, 177, 52, C_TEXT());
@@ -472,20 +557,11 @@ static void drawConnectingScreen(const String &deviceName, int rssi) {
   tft.drawLine(177, 82, 160, 56, C_TEXT());
   tft.drawLine(160, 56, 143, 74, C_TEXT());
   tft.drawLine(160, 64, 143, 46, C_TEXT());
-  drawCenteredUtf8("连接中...", 112, C_TEXT(), u8g2_font_wqy16_t_gb2312);
-  resetFont();
-  tft.setTextColor(C_MUTED());
-  tft.setTextSize(1);
   String line = safeName(deviceName);
-  if (line.length() > 22) {
-    line = line.substring(0, 22);
-  }
-  tft.setCursor((SCREEN_W - line.length() * 6) / 2, 120);
-  tft.print(line);
+  drawAsciiCentered(shortText(line, 24), 120, C_MUTED());
   char rssiText[18];
   snprintf(rssiText, sizeof(rssiText), "RSSI %d dBm", rssi);
-  tft.setCursor((SCREEN_W - strlen(rssiText) * 6) / 2, 138);
-  tft.print(rssiText);
+  drawAsciiCentered(String(rssiText), 140, C_TEXT());
 }
 
 static void drawMessageScreen(const char *line1, const char *line2) {
@@ -1079,17 +1155,21 @@ static void notifyScanResultsToPhone() {
 }
 
 static void enterWaitConfig(const char *line1, const char *line2, const char *reason) {
-  drawMessageScreen(line1, line2);
+  (void) line1;
+  (void) line2;
   setAppState(WAIT_CONFIG, reason);
+  drawWaitConfigScreen(reason);
 }
 
 static void enterConnectFailed(const char *reason, bool reportToPhone) {
-  drawMessageScreen("CONNECT FAIL", "WAIT CONFIG");
   setAppState(BMS_CONNECT_FAILED, reason);
+  drawConnectFailedScreen(reason);
   if (reportToPhone) {
     sendSetupError("connect_failed");
   }
+  delay(1200);
   setAppState(WAIT_CONFIG, "waiting for mini program config");
+  drawWaitConfigScreen("connect failed");
 }
 
 static bool connectSavedBms(bool reportToPhone) {
@@ -1143,9 +1223,10 @@ static void handleManualScanCommand() {
   NimBLEDevice::getScan()->clearResults();
   if (connected) {
     setAppState(BMS_CONNECTED, "manual scan done");
+    drawMainDashboard(bmsData);
   } else {
     setAppState(WAIT_CONFIG, "manual scan done");
-    drawMessageScreen("WAIT CONFIG", "SELECT BMS");
+    drawWaitConfigScreen("select BMS in mini program");
   }
 }
 
@@ -1300,8 +1381,7 @@ static void handleReconnect() {
     wasConnected = false;
     disconnectAndCleanup();
     Serial.println("[CONNECT] Disconnected; waiting for mini program command");
-    setAppState(BMS_CONNECT_FAILED, "BMS disconnected");
-    enterWaitConfig("BMS LOST", "WAIT CONFIG", "BMS disconnected");
+    enterConnectFailed("BMS disconnected", false);
   }
 }
 
@@ -1316,7 +1396,7 @@ static void initDisplay() {
   tft.setSPISpeed(40000000);
   u8g2Text.begin(tft);
   tft.fillScreen(C_BG());
-  drawScanScreen();
+  drawBootScreen();
 }
 
 void setup() {
@@ -1352,6 +1432,7 @@ void setup() {
   NimBLEDevice::setPower(9);
   initSetupBleService();
   setAppState(BLE_SETUP_READY, "setup BLE service ready");
+  drawBleReadyScreen();
 
   if (selectedBmsMac.length() > 0) {
     connectSavedBms(false);

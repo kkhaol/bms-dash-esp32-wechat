@@ -22,6 +22,19 @@ Important rules:
 - A failed switch returns `{"type":"error","message":"connect_failed"}` and keeps the previous saved config.
 - Every state change is logged as `[STATE] old -> new: reason`.
 
+## Screen State UI
+
+The 1.9 inch TFT has a matching UI for each setup state:
+
+- `BOOTING`: startup and initialization.
+- `BLE_SETUP_READY`: WeChat configuration BLE service is ready.
+- `TRY_CONNECT_LAST_BMS`: scanning only the saved BMS MAC.
+- `WAIT_CONFIG`: waiting for the mini program to choose or reconnect a BMS.
+- `SCANNING_BMS`: the mini program requested a 5-second BMS scan.
+- `SWITCHING_BMS`: switching to a newly selected BMS; NVS is updated only after success.
+- `BMS_CONNECT_FAILED`: connection failed and the old saved config is unchanged.
+- `BMS_CONNECTED`: normal dashboard data view.
+
 ## Mini Program Commands
 
 - `PING`
@@ -44,5 +57,5 @@ D:\tool\Arduino\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe 
 
 Result:
 
-- Sketch: 1,234,685 bytes, 39% of 3,145,728 bytes
+- Sketch: 1,236,281 bytes, 39% of 3,145,728 bytes
 - RAM: 35,640 bytes, 10% of 327,680 bytes
