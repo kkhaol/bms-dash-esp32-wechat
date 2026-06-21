@@ -1,0 +1,36 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/bms/bms",
+    "pages/settings/settings"
+  ],
+  "window": {
+    "navigationBarTitleText": "BMS-DASH",
+    "navigationBarBackgroundColor": "#08111f",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#08111f",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "color": "#7f8da3",
+    "selectedColor": "#24d6a2",
+    "backgroundColor": "#0a1322",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "仪表"
+      },
+      {
+        "pagePath": "pages/bms/bms",
+        "text": "BMS"
+      },
+      {
+        "pagePath": "pages/settings/settings",
+        "text": "设置"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

@@ -1,0 +1,50 @@
+.topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24rpx;
+  padding-top: 10rpx;
+}
+
+.eyebrow {
+  color: #24d6a2;
+  font-size: 22rpx;
+  font-weight: 800;
+  letter-spacing: 2rpx;
+}
+
+.title {
+  margin-top: 8rpx;
+  color: #ffffff;
+  font-size: 42rpx;
+  font-weight: 800;
+  line-height: 1.18;
+}
+
+.status-pill {
+  flex: 0 0 auto;
+  padding: 12rpx 18rpx;
+  border-radius: 999rpx;
+  color: #ffbf47;
+  background: rgba(255, 191, 71, 0.12);
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.status-pill.online {
+  color: #24d6a2;
+  background: rgba(36, 214, 162, 0.14);
+}
+
+.info-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.mono {
+  color: #24d6a2;
+  font-family: "SF Mono", Consolas, monospace;
+  font-size: 24rpx;
+  font-weight: 700;
+}

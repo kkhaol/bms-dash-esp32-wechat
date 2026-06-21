@@ -1,0 +1,11 @@
+miniprogram/project.private.config.json
+miniprogram/miniprogram_npm/
+miniprogram/node_modules/
+esp32/**/build/
+esp32/**/.arduino/
+*.bin
+*.elf
+*.map
+*.log
+.DS_Store
+Thumbs.db
