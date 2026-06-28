@@ -1,109 +1,56 @@
-<view class="page">
+<view class="page dashboard-page">
   <view class="hero">
     <view>
-      <view class="eyebrow">ESP32 BLE CONFIG</view>
-      <view class="title">BMS-DASH 仪表</view>
+      <view class="eyebrow">X仪表</view>
+      <view class="title">电池状态</view>
     </view>
-    <view class="status-pill {{state.dashboardConnected ? 'online' : ''}}">
-      {{state.dashboardConnected ? '已连接' : '未连接'}}
+    <view class="status-pill {{view.dashboardConnected ? 'online' : ''}}">
+      {{view.dashboardConnected ? '在线' : '离线'}}
     </view>
   </view>
 
-  <view class="section">
-    <view class="panel status-panel">
-      <view class="status-row">
-        <text class="muted">ESP32 仪表</text>
-        <text class="{{state.dashboardConnected ? 'ok' : 'warn'}}">
-          {{state.dashboardConnected ? state.dashboardName : '未连接'}}
-        </text>
-      </view>
-      <view class="status-row">
-        <text class="muted">BMS 状态</text>
-        <text class="{{state.bmsConnected ? 'ok' : 'warn'}}">
-          {{state.bmsConnected ? '已连接' : '等待配置'}}
-        </text>
-      </view>
-      <view class="status-row">
-        <text class="muted">当前 BMS</text>
-        <view class="bms-current">
-          <text class="strong">{{state.selectedBmsName || '--'}}</text>
-          <text class="muted mac">{{state.selectedBmsMac || '未选择'}}</text>
+  <view class="status-card">
+    <view class="status-row">
+      <text class="status-label">X仪表</text>
+      <text class="{{view.dashboardConnected ? 'ok' : 'warn'}}">{{view.dashboardConnected ? '已连接' : '未连接'}}</text>
+    </view>
+    <view class="status-row">
+      <text class="status-label">BMS</text>
+      <text class="{{view.bmsConnected ? 'ok' : 'warn'}}">{{view.bmsConnected ? '已连接' : '未连接'}}</text>
+    </view>
+    <view class="status-row">
+      <text class="status-label">当前BMS</text>
+      <text class="bms-name">{{view.bmsName}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{view.dashboardConnected && view.bmsConnected}}" class="battery-panel">
+    <view class="soc-ring" style="background: conic-gradient(#25f0b0 0deg, #25f0b0 {{view.socDegree}}deg, rgba(255,255,255,0.08) {{view.socDegree}}deg, rgba(255,255,255,0.08) 360deg);">
+      <view class="soc-core">
+        <view class="soc-value-wrap">
+          <text class="soc-number">{{view.socText}}</text>
+          <text class="soc-percent">%</text>
         </view>
+        <text class="soc-label">SOC</text>
+      </view>
+    </view>
+
+    <view class="metric-row">
+      <view class="metric">
+        <text class="metric-label">电压</text>
+        <text class="metric-value">{{view.voltageText}}</text>
+      </view>
+      <view class="metric">
+        <text class="metric-label">电池温度</text>
+        <text class="metric-value">{{view.temperatureText}}</text>
       </view>
     </view>
   </view>
 
-  <view class="section">
-    <view class="section-title">电池数据</view>
-    <view class="data-panel">
-      <view class="soc-card">
-        <view class="soc-pie" style="background: conic-gradient(#24d6a2 0deg, #24d6a2 {{socDegree}}deg, rgba(36, 214, 162, 0.14) {{socDegree}}deg, rgba(36, 214, 162, 0.14) 360deg);">
-          <view class="soc-inner">
-            <text class="soc-value">{{state.soc !== null ? state.soc : '--'}}</text>
-            <text class="soc-unit">SOC %</text>
-          </view>
-        </view>
-      </view>
-      <view class="metric-stack">
-        <view class="metric slim">
-          <text class="metric-label">电压</text>
-          <text class="metric-value">{{state.voltage !== null ? state.voltage + ' V' : '--'}}</text>
-        </view>
-        <view class="metric slim">
-          <text class="metric-label">电流</text>
-          <text class="metric-value">{{state.current !== null ? state.current + ' A' : '--'}}</text>
-        </view>
-      </view>
-    </view>
-  </view>
-
-  <view class="section">
-    <view class="section-title">仪表操作</view>
-    <view class="btn-grid">
-      <view class="action-wrap">
-        <button class="btn" loading="{{state.dashboardScanning}}" disabled="{{busy || state.dashboardScanning}}" bindtap="searchDashboard">搜索仪表</button>
-        <view class="help-btn" catchtap="showTip" data-title="搜索仪表" data-text="搜索名称以 BMS-DASH 开头的 ESP32 小仪表。小程序只连接 ESP32，不直接连接 BMS。">?</view>
-      </view>
-      <view class="action-wrap">
-        <button class="btn secondary" loading="{{state.dashboardConnecting}}" disabled="{{busy || state.dashboardConnecting || !state.selectedDashboardDeviceId}}" bindtap="connectDashboard">连接仪表</button>
-        <view class="help-btn" catchtap="showTip" data-title="连接仪表" data-text="连接选中的 ESP32，并发现 Nordic UART 风格的 BLE 服务与特征值。">?</view>
-      </view>
-      <view class="action-wrap">
-        <button class="btn warn" disabled="{{busy || !state.dashboardConnected}}" bindtap="refreshStatus">刷新状态</button>
-        <view class="help-btn" catchtap="showTip" data-title="刷新状态" data-text="向 ESP32 发送 GET_STATUS，刷新当前 BMS 连接状态和电池数据。">?</view>
-      </view>
-      <view class="action-wrap">
-        <button class="btn danger" disabled="{{busy || !state.dashboardConnected}}" bindtap="disconnectDashboard">断开连接</button>
-        <view class="help-btn" catchtap="showTip" data-title="断开连接" data-text="断开手机与 ESP32 的 BLE 配置连接，不会直接操作 BMS。">?</view>
-      </view>
-    </view>
-  </view>
-
-  <view class="section">
-    <view class="section-title">发现的仪表</view>
-    <view wx:if="{{devices.length === 0}}" class="empty">点击“搜索仪表”查找名称以 BMS-DASH 开头的 ESP32</view>
-    <view wx:for="{{devices}}" wx:key="deviceId" class="device-item {{state.selectedDashboardDeviceId === item.deviceId ? 'selected' : ''}}" bindtap="selectDashboard" data-id="{{item.deviceId}}">
-      <view>
-        <view class="strong">{{item.name}}</view>
-        <view class="muted device-id">{{item.deviceId}}</view>
-      </view>
-      <view class="rssi">{{item.rssi}} dBm</view>
-    </view>
-  </view>
-
-  <view class="section">
-    <view class="section-title">调试日志</view>
-    <view class="log-box">
-      <view wx:if="{{logs.length === 0}}" class="log-line">暂无日志</view>
-      <view wx:for="{{logs}}" wx:key="*this" class="log-line">{{item}}</view>
-    </view>
-  </view>
-
-  <view wx:if="{{tipVisible}}" class="tip-mask" bindtap="hideTip">
-    <view class="tip-card">
-      <view class="tip-title">{{tipTitle}}</view>
-      <view class="tip-text">{{tipText}}</view>
-      <view class="tip-close">点击任意位置关闭</view>
-    </view>
+  <view wx:else class="connect-panel">
+    <view class="connect-title">{{view.dashboardConnected ? '请选择要连接的BMS' : '连接后查看电池状态'}}</view>
+    <button class="btn primary main-action" loading="{{busy}}" disabled="{{busy}}" bindtap="handlePrimaryAction">
+      {{view.primaryText}}
+    </button>
   </view>
 </view>

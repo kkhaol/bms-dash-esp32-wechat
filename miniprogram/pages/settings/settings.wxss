@@ -1,50 +1,94 @@
+.settings-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
 .topbar {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 24rpx;
   padding-top: 10rpx;
 }
 
 .eyebrow {
-  color: #24d6a2;
+  color: #25f0b0;
   font-size: 22rpx;
-  font-weight: 800;
+  font-weight: 850;
   letter-spacing: 2rpx;
 }
 
 .title {
   margin-top: 8rpx;
   color: #ffffff;
-  font-size: 42rpx;
-  font-weight: 800;
-  line-height: 1.18;
+  font-size: 46rpx;
+  font-weight: 850;
+  line-height: 1.1;
 }
 
 .status-pill {
-  flex: 0 0 auto;
-  padding: 12rpx 18rpx;
+  padding: 12rpx 20rpx;
   border-radius: 999rpx;
   color: #ffbf47;
   background: rgba(255, 191, 71, 0.12);
   font-size: 24rpx;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .status-pill.online {
-  color: #24d6a2;
-  background: rgba(36, 214, 162, 0.14);
+  color: #25f0b0;
+  background: rgba(37, 240, 176, 0.14);
 }
 
-.info-card {
+.settings-card {
+  border-radius: 24rpx;
+  background: rgba(10, 22, 40, 0.76);
+}
+
+.setting-row,
+.setting-block {
+  padding: 28rpx;
+  border-bottom: 1rpx solid rgba(255, 255, 255, 0.06);
+}
+
+.setting-row {
   display: flex;
-  flex-direction: column;
-  gap: 16rpx;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28rpx;
 }
 
-.mono {
-  color: #24d6a2;
-  font-family: "SF Mono", Consolas, monospace;
+.setting-row.last {
+  border-bottom: 0;
+}
+
+.setting-title {
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: 800;
+}
+
+.setting-note {
+  margin-top: 8rpx;
+  color: #7f8da3;
   font-size: 24rpx;
-  font-weight: 700;
+  line-height: 1.45;
+}
+
+.setting-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+  margin-bottom: 20rpx;
+}
+
+.setting-value {
+  color: #25f0b0;
+  font-size: 28rpx;
+  font-weight: 850;
+}
+
+.restore-btn {
+  margin-top: 8rpx;
 }

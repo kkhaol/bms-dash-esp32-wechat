@@ -1,30 +1,21 @@
-const ble = require('../../utils/ble');
+const api = require('../../services/api');
 
 Page({
   data: {
-    state: ble.getState(),
-    devices: ble.getDashboardDevices(),
-    logs: ble.getLogs(),
-    socDegree: 0,
-    busy: false,
-    tipVisible: false,
-    tipTitle: '',
-    tipText: ''
+    view: api.getInstrumentView(),
+    busy: false
   },
 
   onShow() {
     this.unsubscribers = [
-      ble.on('state', (state) => this.updateState(state)),
-      ble.on('devices', (devices) => this.setData({ devices })),
-      ble.on('log', (logs) => this.setData({ logs })),
-      ble.on('error', (message) => this.toast(message, 'none'))
+      api.on('state', (state) => this.updateState(state)),
+      api.on('error', (message) => this.toast(message))
     ];
 
-    this.updateState(ble.getState());
-    this.setData({
-      devices: ble.getDashboardDevices(),
-      logs: ble.getLogs()
-    });
+    this.updateState(api.getState());
+    if (api.getState().dashboardConnected) {
+      api.refreshStatus().catch(() => null);
+    }
   },
 
   onHide() {
@@ -41,49 +32,26 @@ Page({
   },
 
   updateState(state) {
-    const soc = typeof state.soc === 'number' ? state.soc : null;
-    const safeSoc = soc === null ? 0 : Math.max(0, Math.min(100, soc));
     this.setData({
-      state,
-      socDegree: Math.round(safeSoc * 3.6)
+      view: api.getInstrumentView(state)
     });
   },
 
-  async searchDashboard() {
-    await this.runTask(async () => {
-      await ble.startDashboardDiscovery();
-      this.toast('正在搜索 BMS-DASH 仪表', 'none');
-    });
-  },
+  async handlePrimaryAction() {
+    const type = this.data.view.primaryType;
 
-  selectDashboard(event) {
-    const deviceId = event.currentTarget.dataset.id;
-    ble.selectDashboardDevice(deviceId);
-  },
+    if (type === 'choose-bms') {
+      wx.switchTab({ url: '/pages/bms/bms' });
+      return;
+    }
 
-  async connectDashboard() {
-    await this.runTask(async () => {
-      await ble.connectDashboard(this.data.state.selectedDashboardDeviceId);
-      this.toast('仪表已连接', 'success');
-    });
-  },
-
-  async refreshStatus() {
-    if (!this.data.state.dashboardConnected) {
-      this.toast('请先连接仪表', 'none');
+    if (type !== 'connect-instrument') {
       return;
     }
 
     await this.runTask(async () => {
-      await ble.refreshStatus();
-      this.toast('已请求状态', 'success');
-    });
-  },
-
-  async disconnectDashboard() {
-    await this.runTask(async () => {
-      await ble.disconnect();
-      this.toast('已断开', 'success');
+      await api.connectInstrument();
+      this.toast('X仪表已连接', 'success');
     });
   },
 
@@ -97,26 +65,10 @@ Page({
       await task();
     } catch (error) {
       const message = error && (error.errMsg || error.message) ? (error.errMsg || error.message) : '操作失败';
-      this.toast(message, 'none');
+      this.toast(message);
     } finally {
       this.setData({ busy: false });
     }
-  },
-
-  showTip(event) {
-    this.setData({
-      tipVisible: true,
-      tipTitle: event.currentTarget.dataset.title || '说明',
-      tipText: event.currentTarget.dataset.text || ''
-    });
-  },
-
-  hideTip() {
-    this.setData({
-      tipVisible: false,
-      tipTitle: '',
-      tipText: ''
-    });
   },
 
   toast(title, icon) {

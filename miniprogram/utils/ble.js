@@ -147,7 +147,8 @@ class BleClient {
       selectedBmsName: '',
       voltage: null,
       current: null,
-      soc: null
+      soc: null,
+      temperature: null
     };
 
     this.dashboardDevices = [];
@@ -449,7 +450,7 @@ class BleClient {
 
     const targetDeviceId = deviceId || this.state.selectedDashboardDeviceId || (this.dashboardDevices[0] && this.dashboardDevices[0].deviceId);
     if (!targetDeviceId) {
-      const message = 'No BMS-DASH device selected';
+      const message = '未选择X仪表';
       this.emit('error', message);
       throw new Error(message);
     }
@@ -618,7 +619,8 @@ class BleClient {
         selectedBmsName: message.name || '',
         voltage: typeof message.voltage === 'number' ? message.voltage : null,
         current: typeof message.current === 'number' ? message.current : null,
-        soc: typeof message.soc === 'number' ? message.soc : null
+        soc: typeof message.soc === 'number' ? message.soc : null,
+        temperature: readTemperature(message)
       });
       if (message.selected_bms) {
         this.rememberBmsHistory({
@@ -663,8 +665,8 @@ class BleClient {
     }
 
     if (message.type === 'error') {
-      const text = message.message || 'ESP32 returned error';
-      this.log(`ESP32 error: ${text}`);
+      const text = message.message || '仪表返回错误';
+      this.log(`Device error: ${text}`);
       this.emit('error', text);
     }
   }
@@ -779,4 +781,23 @@ module.exports = ble;
 function connectedRssiFromList(list, mac) {
   const item = (list || []).find((bms) => normalizeMac(bms.mac) === normalizeMac(mac));
   return item ? item.rssi : -127;
+}
+
+function readTemperature(message) {
+  const fields = [
+    message.temperature,
+    message.battery_temperature,
+    message.batteryTemperature,
+    message.temp,
+    message.mos_temperature,
+    message.mosTemp
+  ];
+
+  for (let i = 0; i < fields.length; i += 1) {
+    if (typeof fields[i] === 'number') {
+      return fields[i];
+    }
+  }
+
+  return null;
 }

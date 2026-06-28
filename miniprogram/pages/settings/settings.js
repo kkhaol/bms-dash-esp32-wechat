@@ -1,25 +1,24 @@
-const ble = require('../../utils/ble');
+const api = require('../../services/api');
 
 Page({
   data: {
-    state: ble.getState(),
-    logs: ble.getLogs(),
-    busy: false,
-    tipVisible: false,
-    tipTitle: '',
-    tipText: ''
+    state: api.getState(),
+    settings: api.getSettings(),
+    logs: api.getLogs(),
+    busy: false
   },
 
   onShow() {
     this.unsubscribers = [
-      ble.on('state', (state) => this.setData({ state })),
-      ble.on('log', (logs) => this.setData({ logs })),
-      ble.on('error', (message) => this.toast(message, 'none'))
+      api.on('state', (state) => this.setData({ state })),
+      api.on('log', (logs) => this.setData({ logs })),
+      api.on('error', (message) => this.toast(message))
     ];
 
     this.setData({
-      state: ble.getState(),
-      logs: ble.getLogs()
+      state: api.getState(),
+      settings: api.getSettings(),
+      logs: api.getLogs()
     });
   },
 
@@ -36,71 +35,41 @@ Page({
     this.unsubscribers = [];
   },
 
-  async pingEsp32() {
-    if (!this.data.state.dashboardConnected) {
-      this.toast('请先连接仪表', 'none');
-      return;
-    }
-
-    await this.runTask(async () => {
-      await ble.sendCommand('PING');
-      this.toast('已发送 PING', 'success');
+  onSwitchChange(event) {
+    const key = event.currentTarget.dataset.key;
+    this.setData({
+      settings: api.updateSetting(key, !!event.detail.value)
     });
   },
 
-  async rebootEsp32() {
-    if (!this.data.state.dashboardConnected) {
-      this.toast('请先连接仪表', 'none');
-      return;
-    }
+  onBrightnessChange(event) {
+    this.setData({
+      settings: api.updateSetting('brightness', event.detail.value)
+    });
+  },
 
+  onLowBatteryChange(event) {
+    this.setData({
+      settings: api.updateSetting('lowBatteryThreshold', event.detail.value)
+    });
+  },
+
+  restoreDefaults() {
     wx.showModal({
-      title: '重启 ESP32',
-      content: '重启后手机会与仪表断开，需要重新搜索连接。',
-      confirmText: '重启',
-      confirmColor: '#ffbf47',
-      success: async (res) => {
+      title: '恢复默认设置',
+      content: '这会恢复本页的高级设置，不会清除已保存的 BMS。',
+      confirmText: '恢复',
+      confirmColor: '#25f0b0',
+      success: (res) => {
         if (!res.confirm) {
           return;
         }
 
-        await this.runTask(async () => {
-          await ble.reboot();
-          this.toast('已发送重启命令', 'success');
+        this.setData({
+          settings: api.resetSettings()
         });
+        this.toast('已恢复默认设置', 'success');
       }
-    });
-  },
-
-  async runTask(task) {
-    if (this.data.busy) {
-      return;
-    }
-
-    this.setData({ busy: true });
-    try {
-      await task();
-    } catch (error) {
-      const message = error && (error.errMsg || error.message) ? (error.errMsg || error.message) : '操作失败';
-      this.toast(message, 'none');
-    } finally {
-      this.setData({ busy: false });
-    }
-  },
-
-  showTip(event) {
-    this.setData({
-      tipVisible: true,
-      tipTitle: event.currentTarget.dataset.title || '说明',
-      tipText: event.currentTarget.dataset.text || ''
-    });
-  },
-
-  hideTip() {
-    this.setData({
-      tipVisible: false,
-      tipTitle: '',
-      tipText: ''
     });
   },
 

@@ -5,7 +5,7 @@
     "pages/settings/settings"
   ],
   "window": {
-    "navigationBarTitleText": "BMS-DASH",
+    "navigationBarTitleText": "X仪表",
     "navigationBarBackgroundColor": "#08111f",
     "navigationBarTextStyle": "white",
     "backgroundColor": "#08111f",
@@ -13,7 +13,7 @@
   },
   "tabBar": {
     "color": "#7f8da3",
-    "selectedColor": "#24d6a2",
+    "selectedColor": "#25f0b0",
     "backgroundColor": "#0a1322",
     "borderStyle": "black",
     "list": [

@@ -1,5 +1,5 @@
 {
-  "description": "BMS-DASH ESP32 BLE configuration mini program",
+  "description": "X instrument mini program",
   "packOptions": {
     "ignore": [],
     "include": []

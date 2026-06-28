@@ -1,58 +1,63 @@
-<view class="page">
+<view class="page settings-page">
   <view class="topbar">
     <view>
-      <view class="eyebrow">DASH SETTINGS</view>
-      <view class="title">仪表设置</view>
+      <view class="eyebrow">SETTINGS</view>
+      <view class="title">设置</view>
     </view>
     <view class="status-pill {{state.dashboardConnected ? 'online' : ''}}">
       {{state.dashboardConnected ? '在线' : '离线'}}
     </view>
   </view>
 
-  <view class="section">
-    <view class="section-title">仪表维护</view>
-    <view class="btn-grid">
-      <view class="action-wrap">
-        <button class="btn secondary" disabled="{{busy || !state.dashboardConnected}}" bindtap="pingEsp32">PING</button>
-        <view class="help-btn" catchtap="showTip" data-title="PING" data-text="向 ESP32 发送 PING。收到 {type:pong} 代表手机与 ESP32 的配置通道可用。">?</view>
+  <view class="settings-card">
+    <view class="setting-row">
+      <view>
+        <view class="setting-title">自动连接上次BMS</view>
+        <view class="setting-note">有保存记录时，优先回到上次使用的电池。</view>
       </view>
-      <view class="action-wrap">
-        <button class="btn warn" disabled="{{busy || !state.dashboardConnected}}" bindtap="rebootEsp32">重启 ESP32</button>
-        <view class="help-btn" catchtap="showTip" data-title="重启 ESP32" data-text="向 ESP32 发送 REBOOT。重启后小程序需要重新搜索并连接仪表。">?</view>
+      <switch checked="{{settings.autoLastBms}}" data-key="autoLastBms" bindchange="onSwitchChange" color="#25f0b0" />
+    </view>
+
+    <view class="setting-row">
+      <view>
+        <view class="setting-title">优先连接信号最强BMS</view>
+        <view class="setting-note">扫描结果会优先选中信号更强的设备。</view>
       </view>
+      <switch checked="{{settings.preferStrongest}}" data-key="preferStrongest" bindchange="onSwitchChange" color="#25f0b0" />
+    </view>
+
+    <view class="setting-block">
+      <view class="setting-head">
+        <text class="setting-title">屏幕亮度</text>
+        <text class="setting-value">{{settings.brightness}}%</text>
+      </view>
+      <slider value="{{settings.brightness}}" min="20" max="100" step="5" activeColor="#25f0b0" backgroundColor="#243246" block-color="#ffffff" block-size="22" bindchange="onBrightnessChange" />
+    </view>
+
+    <view class="setting-block">
+      <view class="setting-head">
+        <text class="setting-title">低电量提醒阈值</text>
+        <text class="setting-value">{{settings.lowBatteryThreshold}}%</text>
+      </view>
+      <slider value="{{settings.lowBatteryThreshold}}" min="5" max="40" step="1" activeColor="#25f0b0" backgroundColor="#243246" block-color="#ffffff" block-size="22" bindchange="onLowBatteryChange" />
+    </view>
+
+    <view class="setting-row last">
+      <view>
+        <view class="setting-title">调试日志</view>
+        <view class="setting-note">打开后显示连接和通信记录。</view>
+      </view>
+      <switch checked="{{settings.debugLogs}}" data-key="debugLogs" bindchange="onSwitchChange" color="#25f0b0" />
     </view>
   </view>
 
-  <view class="section">
-    <view class="panel info-card">
-      <view class="row">
-        <text class="muted">Service</text>
-        <text class="mono">6E400001</text>
-      </view>
-      <view class="row">
-        <text class="muted">RX 写入</text>
-        <text class="mono">6E400002</text>
-      </view>
-      <view class="row">
-        <text class="muted">TX 通知</text>
-        <text class="mono">6E400003</text>
-      </view>
-    </view>
-  </view>
+  <button class="btn danger restore-btn" bindtap="restoreDefaults">恢复默认设置</button>
 
-  <view class="section">
+  <view wx:if="{{settings.debugLogs}}" class="section">
     <view class="section-title">调试日志</view>
     <view class="log-box">
       <view wx:if="{{logs.length === 0}}" class="log-line">暂无日志</view>
       <view wx:for="{{logs}}" wx:key="*this" class="log-line">{{item}}</view>
-    </view>
-  </view>
-
-  <view wx:if="{{tipVisible}}" class="tip-mask" bindtap="hideTip">
-    <view class="tip-card">
-      <view class="tip-title">{{tipTitle}}</view>
-      <view class="tip-text">{{tipText}}</view>
-      <view class="tip-close">点击任意位置关闭</view>
     </view>
   </view>
 </view>

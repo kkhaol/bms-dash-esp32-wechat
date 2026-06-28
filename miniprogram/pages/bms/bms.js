@@ -1,33 +1,36 @@
-const ble = require('../../utils/ble');
+const api = require('../../services/api');
+
+function normalizeMac(mac) {
+  return String(mac || '').trim().toUpperCase();
+}
 
 Page({
   data: {
-    state: ble.getState(),
-    bmsList: ble.getBmsList(),
-    bmsHistory: ble.getBmsHistory(),
-    logs: ble.getLogs(),
-    busy: false,
-    tipVisible: false,
-    tipTitle: '',
-    tipText: ''
+    state: api.getState(),
+    settings: api.getSettings(),
+    bmsList: [],
+    bmsHistory: [],
+    selectedMac: '',
+    selectedName: '',
+    busy: false
   },
 
   onShow() {
     this.unsubscribers = [
-      ble.on('state', (state) => this.setData({ state })),
-      ble.on('bms', (bmsList) => this.setData({ bmsList })),
-      ble.on('history', (bmsHistory) => this.setData({ bmsHistory })),
-      ble.on('log', (logs) => this.setData({ logs })),
-      ble.on('message', (message) => this.handleMessage(message)),
-      ble.on('error', (message) => this.toast(message, 'none'))
+      api.on('state', (state) => this.updateState(state)),
+      api.on('bms', (bmsList) => this.updateBmsList(bmsList)),
+      api.on('history', (history) => this.updateHistory(history)),
+      api.on('message', (message) => this.handleMessage(message)),
+      api.on('error', (message) => this.toast(message))
     ];
 
+    const state = api.getState();
     this.setData({
-      state: ble.getState(),
-      bmsList: ble.getBmsList(),
-      bmsHistory: ble.getBmsHistory(),
-      logs: ble.getLogs()
+      state,
+      settings: api.getSettings(),
+      selectedMac: state.selectedBmsMac || ''
     });
+    this.refreshLists();
   },
 
   onHide() {
@@ -43,91 +46,125 @@ Page({
     this.unsubscribers = [];
   },
 
-  handleMessage(message) {
-    if (message.type === 'select_ok') {
-      this.toast('BMS 已保存并连接', 'success');
+  updateState(state) {
+    const patch = { state };
+    if (!this.data.selectedMac && state.selectedBmsMac) {
+      patch.selectedMac = state.selectedBmsMac;
     }
+    this.setData(patch);
+    this.refreshLists();
+  },
+
+  updateBmsList(bmsList) {
+    const nextList = this.decorateList(api.getBmsListWithFlags(bmsList, this.data.settings));
+    this.setData({ bmsList: nextList });
+
+    if (this.data.settings.preferStrongest && !this.data.selectedMac) {
+      const first = nextList[0];
+      if (first) {
+        this.setSelected(first);
+      }
+    } else {
+      this.updateSelectedName();
+    }
+  },
+
+  updateHistory(history) {
+    this.setData({
+      bmsHistory: this.decorateList(api.getBmsHistoryWithFlags(history))
+    });
+    this.updateSelectedName();
+  },
+
+  refreshLists() {
+    this.setData({
+      bmsList: this.decorateList(api.getBmsList()),
+      bmsHistory: this.decorateList(api.getBmsHistory())
+    });
+    this.updateSelectedName();
+  },
+
+  decorateList(list) {
+    const selectedMac = normalizeMac(this.data.selectedMac || this.data.state.selectedBmsMac);
+    return (list || []).map((item) => ({
+      ...item,
+      selected: selectedMac && normalizeMac(item.mac) === selectedMac,
+      signalText: typeof item.rssi === 'number' ? `${item.rssi} dBm` : '--'
+    }));
+  },
+
+  updateSelectedName() {
+    const selectedMac = normalizeMac(this.data.selectedMac);
+    const all = [...this.data.bmsList, ...this.data.bmsHistory];
+    const selected = all.find((item) => normalizeMac(item.mac) === selectedMac);
+    this.setData({
+      selectedName: selected ? selected.name : (this.data.state.selectedBmsName || '')
+    });
+  },
+
+  setSelected(item) {
+    this.setData({
+      selectedMac: item.mac,
+      selectedName: item.name || ''
+    });
+    this.refreshLists();
+  },
+
+  chooseBms(event) {
+    const mac = event.currentTarget.dataset.mac;
+    const all = [...this.data.bmsList, ...this.data.bmsHistory];
+    const item = all.find((candidate) => normalizeMac(candidate.mac) === normalizeMac(mac));
+    if (item) {
+      this.setSelected(item);
+    }
+  },
+
+  async connectInstrument() {
+    await this.runTask(async () => {
+      await api.connectInstrument();
+      this.toast('X仪表已连接', 'success');
+    });
   },
 
   async scanBms() {
     if (!this.data.state.dashboardConnected) {
-      this.toast('请先连接仪表', 'none');
+      this.toast('请先连接X仪表');
       return;
     }
 
     await this.runTask(async () => {
-      await ble.scanBms();
-      this.toast('已请求 ESP32 扫描 BMS', 'success');
+      await api.scanBms();
+      this.toast('正在扫描附近BMS', 'none');
     });
   },
 
-  async selectBms(event) {
-    const mac = event.currentTarget.dataset.mac;
-    await this.tryConnectBms(mac);
-  },
-
-  async selectHistoryBms(event) {
-    const mac = event.currentTarget.dataset.mac;
-    await this.tryConnectBms(mac);
-  },
-
-  async tryConnectBms(mac) {
+  async connectSelectedBms() {
     if (!this.data.state.dashboardConnected) {
-      this.toast('请先连接仪表', 'none');
+      this.toast('请先连接X仪表');
+      return;
+    }
+
+    if (!this.data.selectedMac) {
+      this.toast('请先选择BMS');
       return;
     }
 
     await this.runTask(async () => {
-      await ble.selectBms(mac);
-      this.toast('已请求连接指定 BMS', 'success');
+      await api.selectBms(this.data.selectedMac);
+      this.toast('正在连接此BMS', 'none');
     });
   },
 
-  async reconnectBms() {
-    if (!this.data.state.dashboardConnected) {
-      this.toast('请先连接仪表', 'none');
+  handleMessage(message) {
+    if (message.type === 'select_ok') {
+      this.toast('BMS已连接', 'success');
+      api.refreshStatus().catch(() => null);
       return;
     }
 
-    await this.runTask(async () => {
-      await ble.reconnectBms();
-      this.toast('已请求重连保存的 BMS', 'success');
-    });
-  },
-
-  async forgetBms() {
-    if (!this.data.state.dashboardConnected) {
-      this.toast('请先连接仪表', 'none');
-      return;
+    if (message.type === 'scan_done') {
+      this.toast('扫描完成', 'success');
     }
-
-    wx.showModal({
-      title: '清除已保存 BMS',
-      content: 'ESP32 将忘记当前保存的 BMS。下次开机不会自动连接 BMS。',
-      confirmText: '清除',
-      confirmColor: '#d84d4d',
-      success: async (res) => {
-        if (!res.confirm) {
-          return;
-        }
-
-        await this.runTask(async () => {
-          await ble.forgetBms();
-          this.toast('已清除保存配置', 'success');
-        });
-      }
-    });
-  },
-
-  async refreshStatus() {
-    if (!this.data.state.dashboardConnected) {
-      this.toast('请先连接仪表', 'none');
-      return;
-    }
-
-    await this.runTask(async () => {
-      await ble.refreshStatus();
-    });
   },
 
   async runTask(task) {
@@ -140,26 +177,10 @@ Page({
       await task();
     } catch (error) {
       const message = error && (error.errMsg || error.message) ? (error.errMsg || error.message) : '操作失败';
-      this.toast(message, 'none');
+      this.toast(message);
     } finally {
       this.setData({ busy: false });
     }
-  },
-
-  showTip(event) {
-    this.setData({
-      tipVisible: true,
-      tipTitle: event.currentTarget.dataset.title || '说明',
-      tipText: event.currentTarget.dataset.text || ''
-    });
-  },
-
-  hideTip() {
-    this.setData({
-      tipVisible: false,
-      tipTitle: '',
-      tipText: ''
-    });
   },
 
   toast(title, icon) {

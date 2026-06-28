@@ -1,98 +1,57 @@
-<view class="page">
+<view class="page bms-page">
   <view class="topbar">
     <view>
-      <view class="eyebrow">BMS TARGET</view>
-      <view class="title">BMS 选择与连接</view>
+      <view class="eyebrow">BMS</view>
+      <view class="title">选择电池</view>
     </view>
     <view class="status-dot {{state.bmsConnected ? 'online' : ''}}"></view>
   </view>
 
-  <view class="section">
-    <view class="panel summary">
-      <view class="row">
-        <text class="muted">ESP32</text>
-        <text class="{{state.dashboardConnected ? 'ok' : 'warn'}}">{{state.dashboardConnected ? '已连接' : '未连接'}}</text>
-      </view>
-      <view class="row">
-        <text class="muted">BMS</text>
-        <text class="{{state.bmsConnected ? 'ok' : 'warn'}}">{{state.bmsConnected ? '已连接' : '等待配置'}}</text>
-      </view>
-      <view class="row">
-        <text class="muted">已保存</text>
-        <text class="strong mac">{{state.selectedBmsMac || '未选择'}}</text>
-      </view>
-    </view>
+  <view wx:if="{{!state.dashboardConnected}}" class="connect-card">
+    <view class="connect-title">先连接X仪表</view>
+    <view class="connect-text">连接后即可扫描并选择要使用的 BMS。</view>
+    <button class="btn primary" loading="{{busy}}" disabled="{{busy}}" bindtap="connectInstrument">连接X仪表</button>
   </view>
 
-  <view class="section">
-    <view class="section-title">BMS 操作</view>
-    <view class="btn-grid">
-      <view class="action-wrap">
-        <button class="btn" loading="{{state.bmsScanning}}" disabled="{{busy || !state.dashboardConnected || state.bmsScanning}}" bindtap="scanBms">扫描 BMS</button>
-        <view class="help-btn" catchtap="showTip" data-title="扫描 BMS" data-text="让 ESP32 扫描附近疑似蚂蚁 BMS 5 秒，并通过 BLE 返回 name、mac、rssi 列表。">?</view>
+  <view wx:else>
+    <view class="selected-panel">
+      <view>
+        <view class="selected-label">当前选择</view>
+        <view class="selected-name">{{selectedName || '未选择BMS'}}</view>
+        <view wx:if="{{selectedMac}}" class="selected-mac">{{selectedMac}}</view>
       </view>
-      <view class="action-wrap">
-        <button class="btn secondary" disabled="{{busy || !state.dashboardConnected}}" bindtap="reconnectBms">重连保存 BMS</button>
-        <view class="help-btn" catchtap="showTip" data-title="重连保存 BMS" data-text="向 ESP32 发送 RECONNECT_BMS，只尝试连接已保存的 BMS，不自动连接最强信号设备。">?</view>
-      </view>
-      <view class="action-wrap">
-        <button class="btn secondary" disabled="{{busy || !state.dashboardConnected}}" bindtap="refreshStatus">刷新状态</button>
-        <view class="help-btn" catchtap="showTip" data-title="刷新状态" data-text="向 ESP32 发送 GET_STATUS，确认当前连接和已保存 BMS。">?</view>
-      </view>
-      <view class="action-wrap">
-        <button class="btn danger" disabled="{{busy || !state.dashboardConnected}}" bindtap="forgetBms">清除保存</button>
-        <view class="help-btn" catchtap="showTip" data-title="清除保存" data-text="向 ESP32 发送 FORGET_BMS，清除 NVS 中保存的 selected_bms_mac 和 selected_bms_name。">?</view>
+      <view class="selected-state {{state.bmsConnected ? 'online' : ''}}">
+        {{state.bmsConnected ? '已连接' : '未连接'}}
       </view>
     </view>
-  </view>
 
-  <view class="section">
-    <view class="section-title">历史连接过的 BMS</view>
-    <view wx:if="{{bmsHistory.length === 0}}" class="empty">
-      暂无历史记录。成功选择并连接 BMS 后会自动记录在这里。
-    </view>
-    <view wx:for="{{bmsHistory}}" wx:key="mac" class="bms-item history {{state.selectedBmsMac === item.mac ? 'selected' : ''}}" bindtap="selectHistoryBms" data-mac="{{item.mac}}">
-      <view class="bms-main">
-        <view class="bms-name">{{item.name}}</view>
-        <view class="muted mac left">{{item.mac}}</view>
-      </view>
-      <view class="bms-side">
-        <text class="rssi">{{item.rssi}} dBm</text>
-        <text class="select-hint">尝试连接</text>
-      </view>
-    </view>
-  </view>
+    <button class="btn primary main-btn" loading="{{busy}}" disabled="{{busy || !selectedMac}}" bindtap="connectSelectedBms">连接此BMS</button>
+    <button class="btn secondary main-btn" loading="{{state.bmsScanning}}" disabled="{{busy || state.bmsScanning}}" bindtap="scanBms">扫描附近BMS</button>
 
-  <view class="section">
-    <view class="section-title">ESP32 扫描结果</view>
-    <view wx:if="{{bmsList.length === 0}}" class="empty">
-      暂无扫描结果。连接仪表后点击“扫描 BMS”。
-    </view>
-    <view wx:for="{{bmsList}}" wx:key="mac" class="bms-item {{state.selectedBmsMac === item.mac ? 'selected' : ''}}" bindtap="selectBms" data-mac="{{item.mac}}">
-      <view class="bms-main">
-        <view class="bms-name">{{item.name}}</view>
-        <view class="muted mac left">{{item.mac}}</view>
-      </view>
-      <view class="bms-side">
-        <text class="rssi">{{item.rssi}} dBm</text>
-        <text class="select-hint">{{state.selectedBmsMac === item.mac ? '已保存' : '连接并保存'}}</text>
+    <view class="section">
+      <view class="section-title">历史连接</view>
+      <view wx:if="{{bmsHistory.length === 0}}" class="empty">连接成功后，历史 BMS 会显示在这里。</view>
+      <view wx:for="{{bmsHistory}}" wx:key="mac" class="bms-card {{item.selected ? 'selected' : ''}}" bindtap="chooseBms" data-mac="{{item.mac}}">
+        <view class="card-head">
+          <view class="bms-name">{{item.name || '未命名BMS'}}</view>
+          <view wx:if="{{item.isLast}}" class="tag">上次连接</view>
+        </view>
+        <view class="signal">信号 {{item.signalText}}</view>
+        <view class="mac">{{item.mac}}</view>
       </view>
     </view>
-  </view>
 
-  <view class="section">
-    <view class="section-title">调试日志</view>
-    <view class="log-box">
-      <view wx:if="{{logs.length === 0}}" class="log-line">暂无日志</view>
-      <view wx:for="{{logs}}" wx:key="*this" class="log-line">{{item}}</view>
-    </view>
-  </view>
-
-  <view wx:if="{{tipVisible}}" class="tip-mask" bindtap="hideTip">
-    <view class="tip-card">
-      <view class="tip-title">{{tipTitle}}</view>
-      <view class="tip-text">{{tipText}}</view>
-      <view class="tip-close">点击任意位置关闭</view>
+    <view class="section">
+      <view class="section-title">附近 BMS</view>
+      <view wx:if="{{bmsList.length === 0}}" class="empty">点击“扫描附近BMS”查找可连接的电池。</view>
+      <view wx:for="{{bmsList}}" wx:key="mac" class="bms-card {{item.selected ? 'selected' : ''}}" bindtap="chooseBms" data-mac="{{item.mac}}">
+        <view class="card-head">
+          <view class="bms-name">{{item.name || '未命名BMS'}}</view>
+          <view wx:if="{{item.isLast}}" class="tag">上次连接</view>
+        </view>
+        <view class="signal">信号 {{item.signalText}}</view>
+        <view class="mac">{{item.mac}}</view>
+      </view>
     </view>
   </view>
 </view>
