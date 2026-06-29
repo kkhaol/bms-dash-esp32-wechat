@@ -4,13 +4,13 @@
 
 ## 当前正式版本
 
-- 固件目录：`esp32/ANT_BMS_TFT_Dashboard_V2_4_CustomerUI/`
+- 固件目录：`esp32/ANT_BMS_TFT_Dashboard_V2_4_1_DisplayFix/`
 - 小程序目录：`miniprogram/`
-- 固件版本：`ANT_BMS_TFT_Dashboard_V2_4_CustomerUI`
+- 固件版本：`ANT_BMS_TFT_Dashboard_V2_4_1_DisplayFix`
 - 屏幕驱动：TFT_eSPI
 - 屏幕方向：横屏 320x170
 
-旧的 V2.2 目录仍保留用于追溯，不作为当前客户版首选。
+旧的 V2.2 和 V2.4 目录仍保留用于追溯，不作为当前客户版首选。
 
 ## 仪表端体验
 
@@ -35,7 +35,7 @@
 在 Arduino CLI 中使用 ESP32 `huge_app` 分区编译：
 
 ```powershell
-arduino-cli compile --fqbn esp32:esp32:esp32:PartitionScheme=huge_app esp32/ANT_BMS_TFT_Dashboard_V2_4_CustomerUI
+arduino-cli compile --fqbn esp32:esp32:esp32:PartitionScheme=huge_app esp32/ANT_BMS_TFT_Dashboard_V2_4_1_DisplayFix
 ```
 
 本机已使用 ESP32 core 2.0.11、TFT_eSPI 2.5.43、NimBLE-Arduino 2.5.0 编译通过。
