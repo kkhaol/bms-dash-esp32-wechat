@@ -101,7 +101,7 @@ Page({
     const selectedMac = normalizeMac(this.data.selectedMac || this.data.state.selectedBmsMac);
     return (list || []).map((item, index) => ({
       ...item,
-      displayName: item.isLast ? '上次使用的电池' : `电池 ${index + 1}`,
+      displayName: item.name || item.displayName || (item.isLast ? '上次使用的电池' : '未命名电池'),
       selected: selectedMac && normalizeMac(item.mac) === selectedMac,
       signalText: signalLabel(item.rssi)
     }));
