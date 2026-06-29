@@ -24,6 +24,8 @@ static const uint32_t BMS_SCAN_MS = 2600;
 static const uint32_t SAVED_BMS_SCAN_MS = 1800;
 static const uint32_t MANUAL_SCAN_MS = 5000;
 static const uint32_t STATUS_REQUEST_INTERVAL_MS = 1000;
+static const uint32_t FIRST_DATA_TIMEOUT_MS = 6500;
+static const uint32_t DATA_STALE_TIMEOUT_MS = 9000;
 static const uint32_t AUTO_RETRY_INTERVAL_MS = 1800;
 static const uint32_t WAIT_PHONE_RETRY_INTERVAL_MS = 6000;
 static const uint8_t WAIT_PHONE_AFTER_NO_BMS_ROUNDS = 3;
@@ -131,6 +133,8 @@ static char dashboardCachedMaxCell[12] = "";
 static char dashboardCachedMinCell[12] = "";
 static AppState appState = BOOTING;
 static uint32_t lastStatusRequestMs = 0;
+static uint32_t bmsConnectReadyMs = 0;
+static uint32_t lastBmsDataMs = 0;
 
 struct DashboardUiValues {
   float voltage = NAN;
@@ -1317,6 +1321,7 @@ static void parseStatusFrame(const std::vector<uint8_t> &frame) {
   next.valid = true;
   bmsData = next;
   bmsDataDirty = true;
+  lastBmsDataMs = millis();
 
   Serial.printf("[DATA] name=%s mac=%s rssi=%d voltage=%.2fV current=%.1fA soc=%d%% power=%.0fw mosTemp=%.0fC delta=%dmV total=%.1fAh remaining=%.1fAh maxCell=%.3fV minCell=%.3fV\r\n",
                 connectedName.c_str(), connectedMac.c_str(), connectedRssi,
@@ -1611,6 +1616,8 @@ static void disconnectAndCleanup() {
   connectedName = "";
   connectedMac = "";
   connectedRssi = -127;
+  bmsConnectReadyMs = 0;
+  lastBmsDataMs = 0;
   bmsData = BmsData();
   if (bleClient != nullptr) {
     if (bleClient->isConnected()) {
@@ -1637,8 +1644,9 @@ static bool connectToBms() {
   bleClient->setConnectionParams(12, 24, 0, 150);
   bleClient->setConnectTimeout(4000);
 
+  // 保持 NimBLE 默认连接流程，避免异步连接影响通知订阅路径。
   if (!bleClient->connect(targetAdvertisedDevice)) {
-    Serial.println("[CONNECT] Failed to connect");
+    Serial.println("[CONNECT] BLE client connect failed");
     disconnectAndCleanup();
     return false;
   }
@@ -1684,7 +1692,9 @@ static bool connectToBms() {
 
   sendDeviceInfoRequest();
   sendStatusRequest();
-  lastStatusRequestMs = millis();
+  bmsConnectReadyMs = millis();
+  lastBmsDataMs = 0;
+  lastStatusRequestMs = bmsConnectReadyMs;
   setAppState(BMS_CONNECTED, "BMS connection ready");
   clearAutoRetry("BMS connected");
   drawDashboardStatic();
@@ -2026,6 +2036,31 @@ static void readBmsData() {
   }
 }
 
+static void handleBmsDataTimeout() {
+  if (!connected || !notifyReady || appState != BMS_CONNECTED) {
+    return;
+  }
+
+  const uint32_t now = millis();
+  const bool waitingFirstFrame = lastBmsDataMs == 0;
+  if (waitingFirstFrame && bmsConnectReadyMs > 0 && now - bmsConnectReadyMs > FIRST_DATA_TIMEOUT_MS) {
+    Serial.println("[CONNECT] No BMS data after connect; reconnecting strongest BMS");
+    wasConnected = false;
+    autoStrongestMode = true;
+    disconnectAndCleanup();
+    enterConnectFailed("BMS data first frame timeout", false);
+    return;
+  }
+
+  if (!waitingFirstFrame && now - lastBmsDataMs > DATA_STALE_TIMEOUT_MS) {
+    Serial.println("[CONNECT] BMS data stale; reconnecting strongest BMS");
+    wasConnected = false;
+    autoStrongestMode = true;
+    disconnectAndCleanup();
+    enterConnectFailed("BMS data stale", false);
+  }
+}
+
 static void handleReconnect() {
   if (wasConnected && !connected) {
     wasConnected = false;
@@ -2107,6 +2142,7 @@ void loop() {
   refreshStateAnimation(false);
 
   readBmsData();
+  handleBmsDataTimeout();
 
   if (connected && notifyReady) {
     if (bmsDataDirty) {
