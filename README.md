@@ -1,25 +1,27 @@
 # X仪表
 
-这是 X仪表 的 ESP32 固件和微信小程序项目。V3.0 是面向客户体验的正式 UI 版本：仪表端使用 170x320 ST7789 彩屏横屏显示，界面按 320x170 固定坐标设计；小程序用于连接 X仪表、搜索附近电池、选择电池、管理历史电池和查看基础状态。
+这是 X仪表 的 ESP32 固件和微信小程序项目。V3.1 是面向客户体验的正式 UI 修正版：仪表端使用 170x320 ST7789 彩屏横屏显示，界面按 320x170 固定坐标设计；小程序用于连接 X仪表、搜索附近电池、选择电池、管理历史电池和查看基础状态。
 
 ## 当前正式版本
 
-- 固件目录：`esp32/ANT_BMS_TFT_Dashboard_V3_0_CustomerUX/`
+- 固件目录：`esp32/ANT_BMS_TFT_Dashboard_V3_1_CustomerUX/`
 - 小程序目录：`miniprogram/`
-- 固件版本：`ANT_BMS_TFT_Dashboard_V3_0_CustomerUX`
+- 固件版本：`ANT_BMS_TFT_Dashboard_V3_1_CustomerUX`
 - 屏幕驱动：`TFT_eSPI`
 - 屏幕方向：横屏 `320x170`
 
-旧的 V2.2、V2.4、V2.4.1、V2.4.3 和 V2.5 目录保留用于追溯，不作为当前客户版本首选。
+旧版本目录保留用于追溯，不作为当前客户版本首选。
 
 ## 仪表端体验
 
-- 主界面按参考 UI 重新绘制：顶部温度和连接图标，左侧电压/电流，中间 SOC 圆环，右侧总容量/剩余容量。
-- 中文显示改为内置 UTF-8 点阵字库，覆盖仪表主界面和状态页所有客户可见中文。
-- 状态页取消小猫和二轮车动画，改为抽象 loading 圆环、雷达扫描和手机呼吸点。
-- 自动连接流程保持原目标：先尝试上次保存的电池，失败后扫描附近信号最强的电池，失败后持续重试。
+- 开机先尝试上次保存的 BMS，找不到或连接失败后直接进入附近最强 BMS 自动连接。
+- 自动连接失败后持续执行“扫描 -> 选择最强 -> 连接 -> 再扫描”的循环。
+- “等待手机操作”只在连续多轮找不到任何 BMS 后出现，后台仍周期性重试。
+- 保存的 MAC 找不到时，会用上次保存的真实蓝牙名称辅助匹配，适配蓝牙随机地址变化。
+- 主界面保留顶部温度和连接图标、左侧电压/电流、中间 SOC 圆环。
+- 电流显示改为固定字号，避免 `0.0` 显得过大；SOC 数字缩小。
+- 右侧改为 4 行图标数据：总容量、剩余容量、最高单体电压、最低单体电压。
 - 主界面不显示 MOS、状态正常、RSSI、MAC、UUID、BLE 名称、Scan window 或工程状态。
-- 屏幕绘制使用 Sprite 缓冲和局部刷新，减少闪烁并降低不必要的 SPI 刷新。
 
 ## 小程序体验
 
@@ -36,7 +38,7 @@
 在 Arduino CLI 中使用 ESP32 `huge_app` 分区编译：
 
 ```powershell
-arduino-cli compile --fqbn esp32:esp32:esp32:PartitionScheme=huge_app esp32/ANT_BMS_TFT_Dashboard_V3_0_CustomerUX
+arduino-cli compile --fqbn esp32:esp32:esp32:PartitionScheme=huge_app esp32/ANT_BMS_TFT_Dashboard_V3_1_CustomerUX
 ```
 
 本机已使用 ESP32 core 2.0.11、TFT_eSPI 2.5.43、NimBLE-Arduino 2.5.0 编译通过。
