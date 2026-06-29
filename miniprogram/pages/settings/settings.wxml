@@ -1,7 +1,7 @@
 <view class="page settings-page">
   <view class="topbar">
     <view>
-      <view class="eyebrow">SETTINGS</view>
+      <view class="eyebrow">X仪表</view>
       <view class="title">设置</view>
     </view>
     <view class="status-pill {{state.dashboardConnected ? 'online' : ''}}">
@@ -12,7 +12,7 @@
   <view class="settings-card">
     <view class="setting-row">
       <view>
-        <view class="setting-title">自动连接上次BMS</view>
+        <view class="setting-title">自动连接上次电池</view>
         <view class="setting-note">有保存记录时，优先回到上次使用的电池。</view>
       </view>
       <switch checked="{{settings.autoLastBms}}" data-key="autoLastBms" bindchange="onSwitchChange" color="#25f0b0" />
@@ -20,8 +20,8 @@
 
     <view class="setting-row">
       <view>
-        <view class="setting-title">优先连接信号最强BMS</view>
-        <view class="setting-note">扫描结果会优先选中信号更强的设备。</view>
+        <view class="setting-title">优先选择信号更强的电池</view>
+        <view class="setting-note">搜索结果会优先选中信号更强的电池。</view>
       </view>
       <switch checked="{{settings.preferStrongest}}" data-key="preferStrongest" bindchange="onSwitchChange" color="#25f0b0" />
     </view>
@@ -41,23 +41,7 @@
       </view>
       <slider value="{{settings.lowBatteryThreshold}}" min="5" max="40" step="1" activeColor="#25f0b0" backgroundColor="#243246" block-color="#ffffff" block-size="22" bindchange="onLowBatteryChange" />
     </view>
-
-    <view class="setting-row last">
-      <view>
-        <view class="setting-title">调试日志</view>
-        <view class="setting-note">打开后显示连接和通信记录。</view>
-      </view>
-      <switch checked="{{settings.debugLogs}}" data-key="debugLogs" bindchange="onSwitchChange" color="#25f0b0" />
-    </view>
   </view>
 
   <button class="btn danger restore-btn" bindtap="restoreDefaults">恢复默认设置</button>
-
-  <view wx:if="{{settings.debugLogs}}" class="section">
-    <view class="section-title">调试日志</view>
-    <view class="log-box">
-      <view wx:if="{{logs.length === 0}}" class="log-line">暂无日志</view>
-      <view wx:for="{{logs}}" wx:key="*this" class="log-line">{{item}}</view>
-    </view>
-  </view>
 </view>

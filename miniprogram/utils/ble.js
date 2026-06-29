@@ -353,7 +353,7 @@ class BleClient {
     } catch (error) {
       const message = this.errorMessage(error, 'Bluetooth adapter open failed');
       this.log(message);
-      this.emit('error', message);
+      this.emit('error', '请打开手机蓝牙和权限');
       throw error;
     }
   }
@@ -379,7 +379,7 @@ class BleClient {
       this.setState({ dashboardScanning: false });
       const message = this.errorMessage(error, 'Dashboard discovery failed');
       this.log(message);
-      this.emit('error', message);
+      this.emit('error', '搜索X仪表失败');
       throw error;
     }
   }
@@ -451,7 +451,7 @@ class BleClient {
     const targetDeviceId = deviceId || this.state.selectedDashboardDeviceId || (this.dashboardDevices[0] && this.dashboardDevices[0].deviceId);
     if (!targetDeviceId) {
       const message = '未选择X仪表';
-      this.emit('error', message);
+      this.emit('error', 'X仪表连接失败');
       throw new Error(message);
     }
 
@@ -549,7 +549,7 @@ class BleClient {
 
   async writeCommandNow(command) {
     if (!this.state.dashboardConnected || !this.deviceId || !this.serviceId || !this.rxId) {
-      const message = 'Dashboard is not connected';
+      const message = 'X仪表未连接';
       this.emit('error', message);
       throw new Error(message);
     }
@@ -602,7 +602,6 @@ class BleClient {
     } catch (error) {
       const text = `Invalid JSON from dashboard: ${line}`;
       this.log(text);
-      this.emit('error', text);
     }
   }
 
@@ -667,7 +666,7 @@ class BleClient {
     if (message.type === 'error') {
       const text = message.message || '仪表返回错误';
       this.log(`Device error: ${text}`);
-      this.emit('error', text);
+      this.emit('error', '操作未完成，请稍后重试');
     }
   }
 
@@ -705,7 +704,7 @@ class BleClient {
 
   async selectBms(mac) {
     if (!mac) {
-      throw new Error('BMS MAC is empty');
+      throw new Error('请选择电池');
     }
 
     return this.sendCommand(`SELECT_BMS:${mac}`);

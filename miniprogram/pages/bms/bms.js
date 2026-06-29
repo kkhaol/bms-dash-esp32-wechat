@@ -4,6 +4,19 @@ function normalizeMac(mac) {
   return String(mac || '').trim().toUpperCase();
 }
 
+function signalLabel(rssi) {
+  if (typeof rssi !== 'number') {
+    return '未知';
+  }
+  if (rssi > -60) {
+    return '强';
+  }
+  if (rssi > -75) {
+    return '良好';
+  }
+  return '一般';
+}
+
 Page({
   data: {
     state: api.getState(),
@@ -86,10 +99,11 @@ Page({
 
   decorateList(list) {
     const selectedMac = normalizeMac(this.data.selectedMac || this.data.state.selectedBmsMac);
-    return (list || []).map((item) => ({
+    return (list || []).map((item, index) => ({
       ...item,
+      displayName: item.isLast ? '上次使用的电池' : `电池 ${index + 1}`,
       selected: selectedMac && normalizeMac(item.mac) === selectedMac,
-      signalText: typeof item.rssi === 'number' ? `${item.rssi} dBm` : '--'
+      signalText: signalLabel(item.rssi)
     }));
   },
 
@@ -98,14 +112,14 @@ Page({
     const all = [...this.data.bmsList, ...this.data.bmsHistory];
     const selected = all.find((item) => normalizeMac(item.mac) === selectedMac);
     this.setData({
-      selectedName: selected ? selected.name : (this.data.state.selectedBmsName || '')
+      selectedName: selected ? selected.displayName : (this.data.state.selectedBmsName ? '已选择电池' : '')
     });
   },
 
   setSelected(item) {
     this.setData({
       selectedMac: item.mac,
-      selectedName: item.name || ''
+      selectedName: item.displayName || '电池'
     });
     this.refreshLists();
   },
@@ -134,7 +148,7 @@ Page({
 
     await this.runTask(async () => {
       await api.scanBms();
-      this.toast('正在扫描附近BMS', 'none');
+      this.toast('正在搜索附近电池', 'none');
     });
   },
 
@@ -145,25 +159,25 @@ Page({
     }
 
     if (!this.data.selectedMac) {
-      this.toast('请先选择BMS');
+      this.toast('请先选择电池');
       return;
     }
 
     await this.runTask(async () => {
       await api.selectBms(this.data.selectedMac);
-      this.toast('正在连接此BMS', 'none');
+      this.toast('正在连接此电池', 'none');
     });
   },
 
   handleMessage(message) {
     if (message.type === 'select_ok') {
-      this.toast('BMS已连接', 'success');
+      this.toast('电池已连接', 'success');
       api.refreshStatus().catch(() => null);
       return;
     }
 
     if (message.type === 'scan_done') {
-      this.toast('扫描完成', 'success');
+      this.toast('搜索完成', 'success');
     }
   },
 

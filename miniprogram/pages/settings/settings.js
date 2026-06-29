@@ -4,21 +4,18 @@ Page({
   data: {
     state: api.getState(),
     settings: api.getSettings(),
-    logs: api.getLogs(),
     busy: false
   },
 
   onShow() {
     this.unsubscribers = [
       api.on('state', (state) => this.setData({ state })),
-      api.on('log', (logs) => this.setData({ logs })),
       api.on('error', (message) => this.toast(message))
     ];
 
     this.setData({
       state: api.getState(),
-      settings: api.getSettings(),
-      logs: api.getLogs()
+      settings: api.getSettings()
     });
   },
 
@@ -57,7 +54,7 @@ Page({
   restoreDefaults() {
     wx.showModal({
       title: '恢复默认设置',
-      content: '这会恢复本页的高级设置，不会清除已保存的 BMS。',
+      content: '这会恢复本页设置，不会清除已保存的电池。',
       confirmText: '恢复',
       confirmColor: '#25f0b0',
       success: (res) => {

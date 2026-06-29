@@ -45,17 +45,18 @@ function getInstrumentView(state) {
   const soc = numberOrNull(source.soc);
   const safeSoc = soc === null ? 0 : clamp(soc, 0, 100);
   const temperature = getBatteryTemperature(source);
+  const hasSelection = !!(source.selectedBmsMac || source.selectedBmsName);
 
   return {
     raw: clone(source),
     dashboardConnected: !!source.dashboardConnected,
     bmsConnected: !!source.bmsConnected,
-    bmsName: source.selectedBmsName || '未选择',
+    bmsName: hasSelection ? '已选择电池' : '未选择',
     socText: soc === null ? '--' : String(Math.round(safeSoc)),
     socDegree: Math.round(safeSoc * 3.6),
     voltageText: source.voltage === null || source.voltage === undefined ? '--' : `${formatNumber(source.voltage, 1)} V`,
     temperatureText: temperature === null ? '--' : `${formatNumber(temperature, 1)} °C`,
-    primaryText: !source.dashboardConnected ? '连接X仪表' : (!source.bmsConnected ? '选择BMS' : ''),
+    primaryText: !source.dashboardConnected ? '连接X仪表' : (!source.bmsConnected ? '选择电池' : ''),
     primaryType: !source.dashboardConnected ? 'connect-instrument' : (!source.bmsConnected ? 'choose-bms' : '')
   };
 }

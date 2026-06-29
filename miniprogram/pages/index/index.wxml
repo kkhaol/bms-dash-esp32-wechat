@@ -15,11 +15,11 @@
       <text class="{{view.dashboardConnected ? 'ok' : 'warn'}}">{{view.dashboardConnected ? '已连接' : '未连接'}}</text>
     </view>
     <view class="status-row">
-      <text class="status-label">BMS</text>
+      <text class="status-label">电池</text>
       <text class="{{view.bmsConnected ? 'ok' : 'warn'}}">{{view.bmsConnected ? '已连接' : '未连接'}}</text>
     </view>
     <view class="status-row">
-      <text class="status-label">当前BMS</text>
+      <text class="status-label">当前电池</text>
       <text class="bms-name">{{view.bmsName}}</text>
     </view>
   </view>
@@ -31,7 +31,7 @@
           <text class="soc-number">{{view.socText}}</text>
           <text class="soc-percent">%</text>
         </view>
-        <text class="soc-label">SOC</text>
+        <text class="soc-label">电量</text>
       </view>
     </view>
 
@@ -41,14 +41,14 @@
         <text class="metric-value">{{view.voltageText}}</text>
       </view>
       <view class="metric">
-        <text class="metric-label">电池温度</text>
+        <text class="metric-label">温度</text>
         <text class="metric-value">{{view.temperatureText}}</text>
       </view>
     </view>
   </view>
 
   <view wx:else class="connect-panel">
-    <view class="connect-title">{{view.dashboardConnected ? '请选择要连接的BMS' : '连接后查看电池状态'}}</view>
+    <view class="connect-title">{{view.dashboardConnected ? '请选择你的电池' : '连接后查看电池状态'}}</view>
     <button class="btn primary main-action" loading="{{busy}}" disabled="{{busy}}" bindtap="handlePrimaryAction">
       {{view.primaryText}}
     </button>
