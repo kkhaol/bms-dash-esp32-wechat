@@ -169,6 +169,62 @@ Page({
     });
   },
 
+  deleteHistory(event) {
+    const mac = event.currentTarget.dataset.mac;
+    if (!mac) {
+      return;
+    }
+
+    wx.showModal({
+      title: '删除历史电池',
+      content: '删除后可重新搜索并选择。',
+      confirmText: '删除',
+      confirmColor: '#ff5b6b',
+      success: (res) => {
+        if (!res.confirm) {
+          return;
+        }
+
+        this.runTask(async () => {
+          const selected = normalizeMac(this.data.selectedMac || this.data.state.selectedBmsMac) === normalizeMac(mac);
+          await api.deleteBmsHistory(mac);
+          if (selected) {
+            this.setData({
+              selectedMac: '',
+              selectedName: ''
+            });
+          }
+          this.refreshLists();
+          this.toast('已删除', 'success');
+        });
+      }
+    });
+  },
+
+  clearHistory() {
+    wx.showModal({
+      title: '清空历史电池',
+      content: '这会清空本机保存的历史电池。',
+      confirmText: '清空',
+      confirmColor: '#ff5b6b',
+      success: (res) => {
+        if (!res.confirm) {
+          return;
+        }
+
+        this.runTask(async () => {
+          await api.clearBmsHistory();
+          this.setData({
+            selectedMac: '',
+            selectedName: ''
+          });
+          this.refreshLists();
+          this.toast('已清空', 'success');
+        });
+      }
+    });
+  },
+
   handleMessage(message) {
     if (message.type === 'select_ok') {
       this.toast('电池已连接', 'success');

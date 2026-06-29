@@ -111,6 +111,28 @@
   margin-top: 18rpx;
 }
 
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+}
+
+.text-btn {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0 8rpx;
+  color: #7f8da3;
+  background: transparent;
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
+.text-btn::after,
+.delete-btn::after {
+  border: 0;
+}
+
 .bms-card {
   margin-bottom: 18rpx;
   padding: 28rpx;
@@ -132,6 +154,13 @@
   gap: 18rpx;
 }
 
+.card-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 12rpx;
+}
+
 .bms-name {
   min-width: 0;
   overflow: hidden;
@@ -150,6 +179,18 @@
   background: rgba(37, 240, 176, 0.14);
   font-size: 22rpx;
   font-weight: 800;
+}
+
+.delete-btn {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 8rpx 14rpx;
+  border-radius: 999rpx;
+  color: #9aa8bb;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 22rpx;
+  font-weight: 800;
+  line-height: 1.25;
 }
 
 .signal {

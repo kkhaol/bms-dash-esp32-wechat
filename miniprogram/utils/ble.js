@@ -148,7 +148,9 @@ class BleClient {
       voltage: null,
       current: null,
       soc: null,
-      temperature: null
+      temperature: null,
+      totalCapacity: null,
+      remainingCapacity: null
     };
 
     this.dashboardDevices = [];
@@ -269,6 +271,39 @@ class BleClient {
     this.bmsHistory = this.bmsHistory.slice(0, 12);
     this.saveHistory();
     this.emit('history', clone(this.bmsHistory));
+  }
+
+  deleteBmsHistory(mac) {
+    const targetMac = normalizeMac(mac);
+    if (!targetMac) {
+      return clone(this.bmsHistory);
+    }
+
+    this.bmsHistory = this.bmsHistory.filter((item) => normalizeMac(item.mac) !== targetMac);
+    this.saveHistory();
+    this.emit('history', clone(this.bmsHistory));
+
+    if (normalizeMac(this.state.selectedBmsMac) === targetMac) {
+      this.setState({
+        selectedBmsMac: '',
+        selectedBmsName: '',
+        bmsConnected: false
+      });
+    }
+
+    return clone(this.bmsHistory);
+  }
+
+  clearBmsHistory() {
+    this.bmsHistory = [];
+    this.saveHistory();
+    this.emit('history', clone(this.bmsHistory));
+    this.setState({
+      selectedBmsMac: '',
+      selectedBmsName: '',
+      bmsConnected: false
+    });
+    return clone(this.bmsHistory);
   }
 
   installListeners() {
@@ -619,7 +654,9 @@ class BleClient {
         voltage: typeof message.voltage === 'number' ? message.voltage : null,
         current: typeof message.current === 'number' ? message.current : null,
         soc: typeof message.soc === 'number' ? message.soc : null,
-        temperature: readTemperature(message)
+        temperature: readTemperature(message),
+        totalCapacity: typeof message.total_capacity === 'number' ? message.total_capacity : null,
+        remainingCapacity: typeof message.remaining_capacity === 'number' ? message.remaining_capacity : null
       });
       if (message.selected_bms) {
         this.rememberBmsHistory({

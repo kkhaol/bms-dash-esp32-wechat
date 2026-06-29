@@ -28,12 +28,18 @@
     <button class="btn secondary main-btn" loading="{{state.bmsScanning}}" disabled="{{busy || state.bmsScanning}}" bindtap="scanBms">搜索附近电池</button>
 
     <view class="section">
-      <view class="section-title">历史电池</view>
+      <view class="section-head">
+        <view class="section-title">历史电池</view>
+        <button wx:if="{{bmsHistory.length > 0}}" class="text-btn" loading="{{busy}}" disabled="{{busy}}" bindtap="clearHistory">清空</button>
+      </view>
       <view wx:if="{{bmsHistory.length === 0}}" class="empty">连接成功后，常用电池会显示在这里。</view>
       <view wx:for="{{bmsHistory}}" wx:key="mac" class="bms-card {{item.selected ? 'selected' : ''}}" bindtap="chooseBms" data-mac="{{item.mac}}">
         <view class="card-head">
           <view class="bms-name">{{item.displayName}}</view>
-          <view wx:if="{{item.isLast}}" class="tag">上次使用</view>
+          <view class="card-actions">
+            <view wx:if="{{item.isLast}}" class="tag">上次使用</view>
+            <button class="delete-btn" data-mac="{{item.mac}}" catchtap="deleteHistory">删除</button>
+          </view>
         </view>
         <view class="signal">信号 {{item.signalText}}</view>
       </view>

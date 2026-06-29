@@ -55,7 +55,10 @@ function getInstrumentView(state) {
     socText: soc === null ? '--' : String(Math.round(safeSoc)),
     socDegree: Math.round(safeSoc * 3.6),
     voltageText: source.voltage === null || source.voltage === undefined ? '--' : `${formatNumber(source.voltage, 1)} V`,
+    currentText: source.current === null || source.current === undefined ? '--' : `${formatNumber(source.current, 1)} A`,
     temperatureText: temperature === null ? '--' : `${formatNumber(temperature, 1)} °C`,
+    totalCapacityText: source.totalCapacity === null || source.totalCapacity === undefined ? '--' : `${formatNumber(source.totalCapacity, 1)} Ah`,
+    remainingCapacityText: source.remainingCapacity === null || source.remainingCapacity === undefined ? '--' : `${formatNumber(source.remainingCapacity, 1)} Ah`,
     primaryText: !source.dashboardConnected ? '连接X仪表' : (!source.bmsConnected ? '选择电池' : ''),
     primaryType: !source.dashboardConnected ? 'connect-instrument' : (!source.bmsConnected ? 'choose-bms' : '')
   };
@@ -102,18 +105,44 @@ async function connectInstrument() {
 
   let devices = ble.getDashboardDevices();
   if (devices.length === 0) {
-    await ble.startDashboardDiscovery();
-    devices = await waitForDashboardDevice(8000);
+    for (let attempt = 0; attempt < 2 && devices.length === 0; attempt += 1) {
+      await ble.startDashboardDiscovery();
+      devices = await waitForDashboardDevice(attempt === 0 ? 8000 : 6000);
+      if (devices.length === 0) {
+        await ble.stopDashboardDiscovery(true);
+        await new Promise((resolve) => setTimeout(resolve, 350));
+      }
+    }
   }
 
   if (!devices.length) {
     await ble.stopDashboardDiscovery(true);
-    throw new Error('未发现X仪表');
+    throw new Error('未发现X仪表，请靠近后重试');
   }
 
   const target = devices[0];
   ble.selectDashboardDevice(target.deviceId);
   return ble.connectDashboard(target.deviceId);
+}
+
+async function deleteBmsHistory(mac) {
+  const state = ble.getState();
+  const targetMac = String(mac || '').toUpperCase();
+  const isSelected = targetMac && String(state.selectedBmsMac || '').toUpperCase() === targetMac;
+  const nextHistory = ble.deleteBmsHistory(mac);
+  if (isSelected && state.dashboardConnected) {
+    await ble.forgetBms();
+  }
+  return nextHistory;
+}
+
+async function clearBmsHistory() {
+  const state = ble.getState();
+  const nextHistory = ble.clearBmsHistory();
+  if (state.dashboardConnected) {
+    await ble.forgetBms();
+  }
+  return nextHistory;
 }
 
 function getSettings() {
@@ -191,6 +220,8 @@ module.exports = {
   selectBms: (mac) => ble.selectBms(mac),
   reconnectBms: () => ble.reconnectBms(),
   forgetBms: () => ble.forgetBms(),
+  deleteBmsHistory,
+  clearBmsHistory,
   refreshStatus: () => ble.refreshStatus(),
   reboot: () => ble.reboot(),
   sendCommand: (command) => ble.sendCommand(command),

@@ -89,6 +89,7 @@
   font-weight: 850;
 }
 
+.action-btn,
 .restore-btn {
   margin-top: 8rpx;
 }

@@ -51,6 +51,30 @@ Page({
     });
   },
 
+  rebootInstrument() {
+    if (!this.data.state.dashboardConnected) {
+      this.toast('请先连接X仪表');
+      return;
+    }
+
+    wx.showModal({
+      title: '重启仪表',
+      content: 'X仪表会立即重启，稍后可重新连接。',
+      confirmText: '重启',
+      confirmColor: '#25f0b0',
+      success: (res) => {
+        if (!res.confirm) {
+          return;
+        }
+
+        this.runTask(async () => {
+          await api.reboot();
+          this.toast('已发送重启指令', 'success');
+        });
+      }
+    });
+  },
+
   restoreDefaults() {
     wx.showModal({
       title: '恢复默认设置',
@@ -68,6 +92,22 @@ Page({
         this.toast('已恢复默认设置', 'success');
       }
     });
+  },
+
+  async runTask(task) {
+    if (this.data.busy) {
+      return;
+    }
+
+    this.setData({ busy: true });
+    try {
+      await task();
+    } catch (error) {
+      const message = error && (error.errMsg || error.message) ? (error.errMsg || error.message) : '操作失败';
+      this.toast(message);
+    } finally {
+      this.setData({ busy: false });
+    }
   },
 
   toast(title, icon) {

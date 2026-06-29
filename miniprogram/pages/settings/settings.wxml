@@ -43,5 +43,6 @@
     </view>
   </view>
 
+  <button class="btn secondary action-btn" loading="{{busy}}" disabled="{{busy || !state.dashboardConnected}}" bindtap="rebootInstrument">重启仪表</button>
   <button class="btn danger restore-btn" bindtap="restoreDefaults">恢复默认设置</button>
 </view>

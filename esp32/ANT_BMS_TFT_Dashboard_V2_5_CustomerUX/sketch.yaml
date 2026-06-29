@@ -1,0 +1,9 @@
+profiles:
+  esp32_dev_huge_app:
+    fqbn: esp32:esp32:esp32:PartitionScheme=huge_app
+    platforms:
+      - platform: esp32:esp32
+        version: 2.0.11
+    libraries:
+      - TFT_eSPI
+      - NimBLE-Arduino
